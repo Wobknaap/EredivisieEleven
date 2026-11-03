@@ -7,3 +7,4 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 .suggestions button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 13px}
 .suggestions b{font-size:14px;font-weight:600;line-height:1.2}
+.player-flag{flex:none;font-size:22px;line-height:1}
