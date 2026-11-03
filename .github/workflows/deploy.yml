@@ -26,7 +26,7 @@ jobs:
       - run: npm run test:e2e
       - run: npm run build
         env:
-          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+          VITE_API_BASE: https://eredivisie-eleven-api.eredivisie-daily-eleven.workers.dev/api
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
