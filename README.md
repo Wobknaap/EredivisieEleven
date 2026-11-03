@@ -4,15 +4,18 @@ A locally playable React + TypeScript football guessing game. The current small 
 
 ## Run
 
-```sh
-npm install
-npm run dev
-npm run build
-npm run preview
-npm test
+```powershell
+npm.cmd install
+npm.cmd run dev
+npm.cmd run build
+npm.cmd run preview
+npm.cmd test
+npm.cmd run test:e2e
 ```
 
-Use `Nieuwe testpuzzel` for a fresh board and `Terug naar vandaag` to restore the daily board. Daily progress uses versioned local storage keyed to the Amsterdam calendar date. Scoring deducts `round(1000 / (appearances + 2 × goals + 10))` (clamped to 10–100); this is an estimate based on demonstration metadata, not community selections.
+On macOS/Linux, replace `npm.cmd` with `npm`.
+
+Use `Nieuwe testpuzzel` for a fresh board and `Terug naar vandaag` to restore the daily board. Daily progress uses versioned local storage keyed to the Amsterdam calendar date. The model assigns each valid answer a synthetic share: `(appearances + 2 × goals + 10)^1.3`, normalized against all valid answers for that slot. Tiers use that share (Diamond <5%, Legendary <12%, Epic <25%, Rare <40%, otherwise Common). Score deduction is `round(10 + 90 × (1 − share)^1.5)`, clamped to 10–100. These percentages are a deterministic model for gameplay, not actual player popularity or community votes.
 
 ## Data
 
