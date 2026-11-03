@@ -1,0 +1,8 @@
+export type Player={id:string;name:string;club:string;nation:string;position:string;clubs:string[];goals:number;appearances:number};
+export type Slot={id:string;label:string;role:string;clue:string;club:string;answers:string[]};
+export const slotsBase=[['gk','Doelman','GK'],['lb','Linksback','LB'],['cb1','Centrale verdediger','CB'],['cb2','Centrale verdediger','CB'],['rb','Rechtsback','RB'],['lm','Linksmidden','LM'],['cm1','Centrale middenvelder','CM'],['cm2','Centrale middenvelder','CM'],['rm','Rechtsmidden','RM'],['st1','Spits','ST'],['st2','Spits','ST']] as const;
+export function normalize(s:string){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
+export function eligible(p:Player,role:string){const group=role==='GK'?'GK':role==='ST'?'ST':role==='LM'||role==='RM'||role==='CM'?'MF':'DF';return p.position===group}
+export function points(player:Player){return Math.max(10,Math.min(100,Math.round(1000/(player.appearances+player.goals*2+10))))}
+export function buildPuzzle(players:Player[],seed:number):Slot[]{let n=Math.abs(seed)|0;const rand=()=>{n=(n*1664525+1013904223)>>>0;return n/4294967296};return slotsBase.map(([id,label,role],i)=>{const candidates=players.filter(p=>eligible(p,role));const chosen=candidates[(Math.floor(rand()*candidates.length)+i)%candidates.length];const alt=candidates.filter(p=>p.clubs.includes(chosen.club)).slice(0,4);return{id,label,role,clue:`Speelde in de Eredivisie voor ${chosen.club}`,club:chosen.club,answers:[...new Set([chosen.id,...alt.map(p=>p.id)])]}})}
+export function isCorrect(slot:Slot,p:Player,used:string[]){return slot.answers.includes(p.id)&&!used.includes(p.id)}
