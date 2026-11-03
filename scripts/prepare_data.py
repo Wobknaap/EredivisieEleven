@@ -60,6 +60,12 @@ def main():
         "missingPosition": len(players) - playable,
         "missingNation": sum(not player["nation"] for player in players),
         "evidence": "Recorded appearance in an Eredivisie game with a matching home or away club ID",
+        "honours": {
+            "competitions": ["Eredivisie", "KNVB Beker", "Johan Cruijff Schaal"],
+            "playerEvidence": "Recorded appearance in the relevant competition during the season",
+            "knvbBekerWinnerEvidence": "Player appeared for the winning club in a KNVB Beker season",
+            "championEvidence": "Player appeared for the Eredivisie champion in a league season",
+        },
     }
     (ROOT / "src/data/metadata.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2))

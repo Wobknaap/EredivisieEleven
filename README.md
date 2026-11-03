@@ -28,6 +28,8 @@ De bron is de [Transfermarkt-datasets DuckDB snapshot](https://github.com/dcarib
 
 De snapshot levert **2.617 spelers** met bewezen Eredivisie-optredens, waarvan **2.605** een bruikbare brede positie hebben. Het bereik is seizoen **2012 t/m 2025**. Dit is niet de volledige Eredivisiegeschiedenis; dit bereik is voorlopig bewust gekozen. Twaalf spelers hebben geen bruikbare positie en kunnen nog niet als antwoord worden gekozen. De exacte dekking en ontbrekende velden staan in `src/data/metadata.json`.
 
+De player export bevat ook `goalsPerSeason`, `careerGoals`, `championSeasons`, `knvbBekerSeasons`, `knvbBekerWinnerSeasons`, `knvbBekerFinalSeasons`, `johanCruijffSchaalSeasons`, `johanCruijffSchaalWinnerSeasons` en `eredivisieTopScorerSeasons`. Een prijsfeit vereist een geregistreerd optreden in die competitie en dat seizoen. Een speler die alleen bij de selectie hoorde telt dus niet automatisch mee. Seizoenen gebruiken het startjaar: `2024` betekent `2024/25`.
+
 Om de data opnieuw te maken, installeer Python en DuckDB en voer uit:
 
 ```powershell
