@@ -52,6 +52,7 @@ export function hasUniqueEleven(slots:Pick<Slot,'answers'>[]){
 }
 
 type Candidate={key:string;clue:string;answers:string[]};
+const compare=(a:string,b:string)=>a<b?-1:a>b?1:0;
 function candidatesFor(role:string,pool:Player[]):Candidate[]{
   const eligiblePlayers=pool.filter(p=>eligible(p,role));
   const byClub=new Map<string,{name:string;ids:string[]}>();
@@ -66,15 +67,15 @@ function candidatesFor(role:string,pool:Player[]):Candidate[]{
   }
   const candidates:Candidate[]=[];
   const add=(key:string,clue:string,ids:string[])=>{if(ids.length>=2&&ids.length<=16)candidates.push({key,clue,answers:[...new Set(ids)].sort((a,b)=>Number(a)-Number(b))})};
-  for(const [id,{name,ids}] of [...byClub].sort(([a],[b])=>a.localeCompare(b))){
+  for(const [id,{name,ids}] of [...byClub].sort(([a],[b])=>compare(a,b))){
     add(`club:${id}`,`Speelde voor ${name}`,ids);
     for(const [nation,nationIds] of byNation){
       const nationSet=new Set(nationIds);
       add(`club:${id}:nation:${nation}`,`Speelde voor ${name} en is ${nation}`,ids.filter(x=>nationSet.has(x)));
     }
   }
-  for(const [nation,ids] of [...byNation].sort(([a],[b])=>a.localeCompare(b)))add(`nation:${nation}`,`Nationaliteit: ${nation}`,ids);
-  for(const [season,ids] of [...bySeason].sort(([a],[b])=>a.localeCompare(b)))add(`season:${season}`,`Speelde in seizoen ${season}/${Number(season)+1}`,ids);
+  for(const [nation,ids] of [...byNation].sort(([a],[b])=>compare(a,b)))add(`nation:${nation}`,`Nationaliteit: ${nation}`,ids);
+  for(const [season,ids] of [...bySeason].sort(([a],[b])=>compare(a,b)))add(`season:${season}`,`Speelde in seizoen ${season}/${Number(season)+1}`,ids);
   return candidates;
 }
 export function buildPuzzle(pool:Player[],seed:number):Slot[]{

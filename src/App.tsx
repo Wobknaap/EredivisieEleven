@@ -31,6 +31,7 @@ export default function App(){
   const submitting=useRef(false);
   const test=testSeed!==null;
   const seed=testSeed??dateSeed(day);
+  const challenge=Math.max(1,Math.floor((Date.parse(day)-Date.parse('2026-11-03'))/86400000)+1);
   const puzzle=useMemo(()=>buildPuzzle(players,seed),[seed]);
   const slot=puzzle.find(s=>s.id===active)||puzzle[0];
   const selected=Object.values(progress.filled);
@@ -75,7 +76,7 @@ export default function App(){
   function backToday(){setTestSeed(null);localStorage.removeItem(testKey);setProgress(readProgress(dailyKey(day)));setActive('st');setQuery('');setMessage('Dagpuzzel hersteld.')}
   async function copy(){await navigator.clipboard.writeText(`Eredivisie Eleven ${test?'test':day} · ${completed}/11 · ${progress.wrong} fout · score ${progress.score}`);setMessage('Resultaat gekopieerd.')}
   return <main className="app">
-    <header className="topbar"><div className="identity"><span className="identity-mark">11</span><div><strong>Eredivisie Eleven</strong><span>De dagelijkse voetbalpuzzel</span></div></div><div className="date">{test?'Testpuzzel':`Dag ${day}`}</div></header>
+    <header className="topbar"><div className="identity"><span className="identity-mark">11</span><div><strong>Eredivisie Eleven</strong><span>De dagelijkse voetbalpuzzel</span></div></div><div className="date">{test?'Testpuzzel':`Puzzel #${challenge} · ${day}`}</div></header>
     <div className="game-heading"><div><h1>Stel je elftal samen</h1><p>Vind voor elke positie een speler die bij de aanwijzing past.</p></div><div className="heading-actions"><button onClick={startTest}><RotateCcw size={16}/> Nieuwe testpuzzel</button>{test&&<button className="text-button" onClick={backToday}>Terug naar vandaag</button>}</div></div>
     <section className="scoreline" aria-label="Spelstatus"><div><span>Score</span><strong>{progress.score.toLocaleString('nl-NL')}</strong></div><div><span>Foute pogingen over</span><strong>{12-progress.wrong}<small> / 12</small></strong></div><div><span>Ingevuld</span><strong>{completed}<small> / 11</small></strong></div></section>
     <div className="game-grid"><section className="pitch-section" aria-label="4-3-3 opstelling"><div className="section-heading"><h2>4-3-3</h2><span>{completed} van 11 spelers</span></div><div className="pitch"><div className="pitch-outline"/><div className="center-line"/><div className="center-circle"/><div className="penalty-area"/><div className="formation">
