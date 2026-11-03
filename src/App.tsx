@@ -40,7 +40,7 @@ export default function App(){
   const lookup=useMemo(()=>new Map(players.map(p=>[p.id,p])),[]);
   const matches=useMemo(()=>{
     const q=normalize(query);if(!q)return [];
-    return players.filter(p=>normalize(p.name).includes(q)||p.clubs.some(c=>normalize(c).includes(q)))
+    return players.filter(p=>normalize(p.name).includes(q))
       .sort((a,b)=>Number(normalize(b.name).startsWith(q))-Number(normalize(a.name).startsWith(q))||a.name.localeCompare(b.name)||Number(a.id)-Number(b.id)).slice(0,8);
   },[query]);
 
@@ -84,8 +84,8 @@ export default function App(){
     </div></div></section>
     <section className="play-panel"><div className="section-heading"><h2>{slot.label}</h2><span>{slot.role}</span></div><p className="clue">{slot.clue}</p><p className="hint">Kies één speler die hieraan voldoet.</p>
       {progress.filled[slot.id]?<div className="filled-note"><Check size={17}/> {lookup.get(progress.filled[slot.id])?.name} staat op deze positie.</div>:<>
-      <label htmlFor="player-search">Zoek een speler</label><div className="searchbox"><Search size={18}/><input id="player-search" autoComplete="off" value={query} disabled={finished} placeholder="Naam of club" onChange={e=>{setQuery(e.target.value);setCursor(0)}} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setCursor(Math.min(cursor+1,matches.length-1))}if(e.key==='ArrowUp'){e.preventDefault();setCursor(Math.max(0,cursor-1))}if(e.key==='Enter'&&matches[cursor]){e.preventDefault();guess(matches[cursor])}}}/></div>
-      {query.trim()&&<div className="suggestions" role="listbox" aria-label="Spelers">{matches.length?matches.map((p,i)=><button key={p.id} data-player-id={p.id} role="option" aria-selected={i===cursor} className={i===cursor?'highlighted':''} disabled={selected.includes(p.id)} onClick={()=>guess(p)}><span><b>{p.name}</b><small>{p.club} · {p.nation||'Nationaliteit onbekend'}{p.birthYear?` · ${p.birthYear}`:''}</small></span></button>):<p>Geen speler gevonden.</p>}</div>}</>}
+      <label htmlFor="player-search">Zoek een speler</label><div className="searchbox"><Search size={18}/><input id="player-search" autoComplete="off" value={query} disabled={finished} placeholder="Spelersnaam" onChange={e=>{setQuery(e.target.value);setCursor(0)}} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setCursor(Math.min(cursor+1,matches.length-1))}if(e.key==='ArrowUp'){e.preventDefault();setCursor(Math.max(0,cursor-1))}if(e.key==='Enter'&&matches[cursor]){e.preventDefault();guess(matches[cursor])}}}/></div>
+      {query.trim()&&<div className="suggestions" role="listbox" aria-label="Spelers">{matches.length?matches.map((p,i)=><button key={p.id} data-player-id={p.id} role="option" aria-selected={i===cursor} className={i===cursor?'highlighted':''} disabled={selected.includes(p.id)} onClick={()=>guess(p)}><b>{p.name}</b></button>):<p>Geen speler gevonden.</p>}</div>}</>}
       <p className="feedback" aria-live="polite">{message}</p><p className="rarity-note">Zeldzaamheid is een modelschatting op basis van Eredivisie-optredens en doelpunten.</p>
     </section></div>
     {finished&&<section className="result"><div><h2>{completed===11?'Elftal compleet':'Pogingen op'}</h2><p>Score {progress.score} · {completed} goed · {progress.wrong} fout</p></div><button onClick={copy}><Copy size={16}/> Kopieer resultaat</button><div className="result-list">{puzzle.filter(s=>progress.filled[s.id]).map(s=><div key={s.id}><span>{s.role} · {lookup.get(progress.filled[s.id])?.name}</span><b>{rarityFromShare(progress.rewards[s.id]?.share??100)} · −{progress.rewards[s.id]?.points??0}</b></div>)}</div></section>}

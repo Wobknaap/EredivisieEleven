@@ -26,7 +26,7 @@ Op macOS of Linux gebruik je `npm` in plaats van `npm.cmd`.
 
 De bron is de [Transfermarkt-datasets DuckDB snapshot](https://github.com/dcaribou/transfermarkt-datasets), gepubliceerd door dcaribou. De bron bevat gegevens tot juli 2026. De export in `src/data/players.json` is gemaakt met `scripts/export_eredivisie.sql`. Alleen een `appearances` record gekoppeld aan een Eredivisie-wedstrijd (`NL1`), met een club-ID dat overeenkomt met thuis- of uitteam, telt als bewijs. Clubhistorie komt uitsluitend uit zulke optredens; transfers en huidige clubs tellen niet automatisch mee.
 
-De snapshot levert **2.617 spelers** met bewezen Eredivisie-optredens, waarvan **2.605** een bruikbare brede positie hebben. Het bereik is seizoen **2012 t/m 2025**. Dit is niet de volledige Eredivisiegeschiedenis. Twaalf spelers hebben geen bruikbare positie en kunnen nog niet als antwoord worden gekozen. De exacte dekking en ontbrekende velden staan in `src/data/metadata.json`.
+De snapshot levert **2.617 spelers** met bewezen Eredivisie-optredens, waarvan **2.605** een bruikbare brede positie hebben. Het bereik is seizoen **2012 t/m 2025**. Dit is niet de volledige Eredivisiegeschiedenis; dit bereik is voorlopig bewust gekozen. Twaalf spelers hebben geen bruikbare positie en kunnen nog niet als antwoord worden gekozen. De exacte dekking en ontbrekende velden staan in `src/data/metadata.json`.
 
 Om de data opnieuw te maken, installeer Python en DuckDB en voer uit:
 
@@ -47,6 +47,7 @@ De bronrepo heeft een CC0-licentie voor eigen materiaal. Onderliggende Transferm
 - Een geldig fout antwoord kost één poging; onbekende of dubbele invoer niet.
 - Elk slot heeft meerdere geldige antwoorden. De generator controleert via bipartite matching of elf unieke spelers het volledige elftal kunnen vullen.
 - De dagelijkse seed is de Amsterdamse datum plus de dataversie. De dag wisselt om middernacht, ook bij zomer- en wintertijd. Voortgang staat per dag en dataversie in `localStorage`.
+- De zoeklijst toont alleen spelersnamen. Een speler telt voor elke Eredivisieclub waarvoor zijn wedstrijdoptredens zijn gedocumenteerd. De aanwijzingen en puzzelgenerator staan afzonderlijk in `src/puzzle.ts`; score en spelstatus staan in `src/engine.ts`.
 - `Nieuwe testpuzzel` maakt een nieuw geldig bord en laat de dagpuzzel intact. `Terug naar vandaag` herstelt die dagpuzzel.
 
 De percentageweergave is een **modelschatting**, geen gemeten populariteit: per geldig antwoord krijgt een speler gewicht `(Eredivisie-optredens + 2 × doelpunten + 10)^0,75`; zijn percentage is zijn gewicht gedeeld door het totaal voor dat slot. De aftrek is `round(10 + 90 × (1 − percentage/100)^1,5)`, begrensd op 10–100. Zeldzaamheidslabels: Diamond <5%, Legendary <12%, Epic <25%, Rare <40%, anders Common. De score is daardoor reproduceerbaar en verandert niet door nieuwe bezoekers.

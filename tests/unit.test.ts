@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {amsterdamDay,buildPuzzle,dateSeed,eligible,hasUniqueEleven,isCorrect,normalize,pointsFromShare,popularityShare,slotsBase} from '../src/engine';
 import {players} from '../src/players';
 import metadata from '../src/data/metadata.json';
+import {candidatesFor} from '../src/puzzle';
 
 describe('verified player pool',()=>{
   it('includes only recorded Eredivisie appearances',()=>{expect(players).toHaveLength(metadata.eligiblePlayers);expect(players.every(p=>p.appearances>0&&p.clubs.length===p.clubIds.length&&p.seasons.length>0)).toBe(true)});
@@ -36,6 +37,20 @@ describe('4-3-3 puzzle',()=>{
     const slot=buildPuzzle(players,42)[0],player=players.find(p=>p.id===slot.answers[0])!;
     expect(isCorrect(slot,player,[])).toBe(true);expect(isCorrect(slot,player,[player.id])).toBe(false);
     expect(hasUniqueEleven([{answers:['a']},{answers:['a']}])).toBe(false);
+  });
+  it('accepts a player for every Eredivisie club they represented',()=>{
+    const clues=candidatesFor('CM',players).filter(c=>c.key.startsWith('club:'));
+    const clubIdsByPlayer=new Map<string,Set<string>>();
+    for(const clue of clues){
+      for(const id of clue.answers){
+        const ids=clubIdsByPlayer.get(id)||new Set<string>();
+        ids.add(clue.key.split(':')[1]);
+        clubIdsByPlayer.set(id,ids);
+      }
+    }
+    const multi=[...clubIdsByPlayer].find(([,clubs])=>clubs.size>=2);
+    expect(multi).toBeDefined();
+    expect([...multi![1]].every(id=>players.find(p=>p.id===multi![0])!.clubIds.includes(id))).toBe(true);
   });
   it('models shares and rewards deterministically',()=>{
     const slot=buildPuzzle(players,42)[0];

@@ -5,3 +5,5 @@
 @media(max-width:800px){.app{padding:18px 16px}.game-heading{align-items:flex-start;flex-direction:column}.game-grid{grid-template-columns:1fr}.pitch{height:460px}.play-panel{min-height:330px}.result-list{grid-template-columns:1fr}footer{flex-direction:column}}
 @media(max-width:430px){.topbar{padding-bottom:15px}.identity strong{font-size:15px}.identity div span{font-size:10px}.game-heading{padding:20px 0 18px}.game-heading h1{font-size:25px}.heading-actions{width:100%}.scoreline>div{padding:11px 9px}.scoreline span{font-size:9px}.scoreline strong{font-size:21px}.pitch{height:430px}.formation{padding:10px 5px}.pitch-row{gap:3px}.position{width:23%;min-height:64px;padding:5px 2px}.row-3 .position{width:24%}.position strong{font-size:9px}.position-role{font-size:9px}.rank{font-size:7px;padding:2px}footer{padding-top:16px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+.suggestions button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 13px}
+.suggestions b{font-size:14px;font-weight:600;line-height:1.2}
