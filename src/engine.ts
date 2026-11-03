@@ -71,7 +71,7 @@ function candidatesFor(role:string,pool:Player[]):Candidate[]{
     add(`club:${id}`,`Speelde voor ${name}`,ids);
     for(const [nation,nationIds] of byNation){
       const nationSet=new Set(nationIds);
-      add(`club:${id}:nation:${nation}`,`Speelde voor ${name} en is ${nation}`,ids.filter(x=>nationSet.has(x)));
+      add(`club:${id}:nation:${nation}`,`Club: ${name} · Nationaliteit: ${nation}`,ids.filter(x=>nationSet.has(x)));
     }
   }
   for(const [nation,ids] of [...byNation].sort(([a],[b])=>compare(a,b)))add(`nation:${nation}`,`Nationaliteit: ${nation}`,ids);
