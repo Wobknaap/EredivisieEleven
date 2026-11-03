@@ -7,4 +7,6 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 .suggestions button{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:10px 13px}
 .suggestions b{font-size:14px;font-weight:600;line-height:1.2}
-.player-flag{flex:none;font-size:22px;line-height:1}
+.player-flag{flex:none}
+.player-flag:not(.player-flag--unknown){display:block;width:23px;height:17px;background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:0 0 0 1px #ffffff55;border-radius:1px}
+.player-flag--unknown{display:grid;place-items:center;width:23px;height:17px;border:1px solid #ffffff55;border-radius:1px;color:var(--muted);font-size:12px}

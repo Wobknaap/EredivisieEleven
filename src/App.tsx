@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {Check,Copy,Search,RotateCcw} from 'lucide-react';
 import {amsterdamDay,buildPuzzle,DATA_VERSION,dateSeed,eligible,isCorrect,normalize,pointsFromShare,popularityShare,rarityFromShare,type Player,type Slot} from './engine';
 import {players} from './players';
-import {flagForNation} from './flags';
+import {flagCodeForNation} from './flags';
 import metadata from './data/metadata.json';
 import {recordCorrectPick} from './api';
 
@@ -86,7 +86,7 @@ export default function App(){
     <section className="play-panel"><div className="section-heading"><h2>{slot.label}</h2><span>{slot.role}</span></div><p className="clue">{slot.clue}</p><p className="hint">Kies één speler die hieraan voldoet.</p>
       {progress.filled[slot.id]?<div className="filled-note"><Check size={17}/> {lookup.get(progress.filled[slot.id])?.name} staat op deze positie.</div>:<>
       <label htmlFor="player-search">Zoek een speler</label><div className="searchbox"><Search size={18}/><input id="player-search" autoComplete="off" value={query} disabled={finished} placeholder="Spelersnaam" onChange={e=>{setQuery(e.target.value);setCursor(0)}} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setCursor(Math.min(cursor+1,matches.length-1))}if(e.key==='ArrowUp'){e.preventDefault();setCursor(Math.max(0,cursor-1))}if(e.key==='Enter'&&matches[cursor]){e.preventDefault();guess(matches[cursor])}}}/></div>
-      {query.trim()&&<div className="suggestions" role="listbox" aria-label="Spelers">{matches.length?matches.map((p,i)=><button key={p.id} data-player-id={p.id} role="option" aria-selected={i===cursor} className={i===cursor?'highlighted':''} disabled={selected.includes(p.id)} onClick={()=>guess(p)}><b>{p.name}</b><span className="player-flag" role="img" aria-label={p.nation||'Nationaliteit onbekend'}>{flagForNation(p.nation)}</span></button>):<p>Geen speler gevonden.</p>}</div>}</>}
+      {query.trim()&&<div className="suggestions" role="listbox" aria-label="Spelers">{matches.length?matches.map((p,i)=><button key={p.id} data-player-id={p.id} role="option" aria-selected={i===cursor} className={i===cursor?'highlighted':''} disabled={selected.includes(p.id)} onClick={()=>guess(p)}><b>{p.name}</b><PlayerFlag nation={p.nation}/></button>):<p>Geen speler gevonden.</p>}</div>}</>}
       <p className="feedback" aria-live="polite">{message}</p><p className="rarity-note">Zeldzaamheid is een modelschatting op basis van Eredivisie-optredens en doelpunten.</p>
     </section></div>
     {finished&&<section className="result"><div><h2>{completed===11?'Elftal compleet':'Pogingen op'}</h2><p>Score {progress.score} · {completed} goed · {progress.wrong} fout</p></div><button onClick={copy}><Copy size={16}/> Kopieer resultaat</button><div className="result-list">{puzzle.filter(s=>progress.filled[s.id]).map(s=><div key={s.id}><span>{s.role} · {lookup.get(progress.filled[s.id])?.name}</span><b>{rarityFromShare(progress.rewards[s.id]?.share??100)} · −{progress.rewards[s.id]?.points??0}</b></div>)}</div></section>}
@@ -97,4 +97,10 @@ export default function App(){
 function Position({slot,player,reward,active,onClick}:{slot:Slot;player?:Player;reward?:Reward;active:boolean;onClick:()=>void}){
   const tier=reward?rarityFromShare(reward.share):'';
   return <button className={`position ${active?'active':''} ${player?'complete':''}`} onClick={onClick} aria-label={`${slot.label}${player?`: ${player.name}, ${tier}, ${reward?.share.toFixed(1)} procent`:''}`}><span className="position-role">{slot.role}</span><strong>{player?player.name:slot.label}</strong>{reward&&<small className={`rank rank-${tier.toLowerCase()}`}>{tier} · {reward.share.toFixed(1)}%</small>}</button>
+}
+
+function PlayerFlag({nation}:{nation:string}){
+  const code=flagCodeForNation(nation);
+  return code?<span className={`player-flag player-flag--${code}`} role="img" aria-label={nation}/>:
+    <span className="player-flag player-flag--unknown" role="img" aria-label="Nationaliteit onbekend">?</span>;
 }
