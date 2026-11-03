@@ -32,6 +32,8 @@ describe('4-3-3 puzzle',()=>{
       const slots=buildPuzzle(players,seed);
       expect(slots).toHaveLength(11);expect(hasUniqueEleven(slots)).toBe(true);
       expect(new Set(slots.map(s=>s.clue)).size).toBe(11);
+      expect(slots.filter(s=>s.family==='club').length).toBeLessThanOrEqual(4);
+      expect(new Set(slots.map(s=>s.family)).size).toBeGreaterThanOrEqual(4);
       for(const slot of slots){
         expect(slot.answers.length).toBeGreaterThanOrEqual(2);
         for(const id of slot.answers){const player=players.find(p=>p.id===id)!;expect(player).toBeDefined();expect(eligible(player,slot.role)).toBe(true);

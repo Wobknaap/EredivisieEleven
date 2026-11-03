@@ -66,7 +66,10 @@ export function candidatesFor(role:string,pool:Player[]):Candidate[]{
   const candidates:Candidate[]=[];
   const add=(candidate:Candidate)=>{
     const answers=unique(candidate.answers);
-    if(answers.length>=2&&answers.length<=25)candidates.push({...candidate,answers});
+    // Broad facts such as nationality can legitimately have more than 25
+    // answers. The UI never reveals this count, and keeping them available
+    // prevents the generator from falling back to club combinations only.
+    if(answers.length>=2&&answers.length<=60)candidates.push({...candidate,answers});
   };
   const addFilter=(key:string,clue:string,family:HintFamily,kind:string,ids:string[],weight=1)=>add({key,clue,family,kind,weight,answers:ids});
 
@@ -133,13 +136,24 @@ export function buildPuzzle(pool:Player[],seed:number):Slot[]{
   const result:Slot[]=[];
   const targets=['easy','medium','hard','medium','easy','hard','medium','easy','hard','medium','hard'];
   const band=(count:number)=>count>=8?'easy':count>=4?'medium':'hard';
+  const familyCaps:Record<HintFamily,number>={club:4,land:2,'carrière':2,prijs:2,statistiek:2,'geboortejaar':2,seizoen:2};
   const roles=[...new Set(slotsBase.map(([, ,role])=>role))];
   for(const role of roles){
     if(pool.filter(p=>eligible(p,role)).length<10)throw new Error(`Not enough players for ${role}; need at least 10`);
     cache.set(role,candidatesFor(role,pool));
   }
   for(const [index,[id,label,role]] of slotsBase.entries()){
-    const candidates=cache.get(role)!.map(c=>({c,order:random()*c.weight})).sort((a,b)=>
+    const familyUse=new Map<HintFamily,number>();
+    for(const slot of result){const family=slot.family as HintFamily|undefined;if(family)familyUse.set(family,(familyUse.get(family)||0)+1)}
+    const familyScore=(candidate:Candidate)=>{
+      const used=familyUse.get(candidate.family)||0;
+      if(used>=familyCaps[candidate.family])return -1000;
+      // Prefer a family that has not appeared yet, while still allowing a
+      // category to return once or twice when the position needs it.
+      const fresh=candidate.family==='club'?0:used===0?18:used===1?5:0;
+      return fresh-used*2+random()*candidate.weight;
+    };
+    const candidates=cache.get(role)!.map(c=>({c,order:familyScore(c)})).sort((a,b)=>
       Number(band(a.c.answers.length)!==targets[index])-Number(band(b.c.answers.length)!==targets[index])||b.order-a.order);
     const choice=candidates.find(({c})=>!result.some(s=>s.key===c.key||s.clue===c.clue)&&hasUniqueEleven([...result,c]));
     if(!choice)throw new Error(`No solvable clue for ${role}; inspect player coverage`);
