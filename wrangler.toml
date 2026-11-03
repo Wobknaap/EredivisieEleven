@@ -1,0 +1,12 @@
+name = "eredivisie-eleven-api"
+main = "backend/worker.ts"
+compatibility_date = "2026-10-28"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "eredivisie-eleven"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "backend/migrations"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://127.0.0.1:4173,https://wobknaap.github.io"

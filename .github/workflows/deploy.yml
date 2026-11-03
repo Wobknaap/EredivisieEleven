@@ -22,8 +22,11 @@ jobs:
       - run: npm ci
       - run: npm test -- --run
       - run: npx playwright install --with-deps chromium
+      - run: npm run api:db:local
       - run: npm run test:e2e
       - run: npm run build
+        env:
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

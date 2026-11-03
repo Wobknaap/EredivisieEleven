@@ -15,6 +15,24 @@ npm.cmd run test:e2e
 
 On macOS/Linux, replace `npm.cmd` with `npm`.
 
+## Backend (local)
+
+The Worker validates daily correct picks against the same seeded puzzle as the browser and stores one answer per session and slot in a local D1 database. Anonymous session IDs are random UUIDs in local storage; no names, email addresses, or IP data are written by the app. Popularity is aggregated by broad position. After 30 correct picks for a role, the game uses those observed choices for tiers and score; until then it uses the deterministic model below. Test puzzles do not write votes.
+
+Run these in separate terminals:
+
+```powershell
+npm.cmd run api:db:local
+npm.cmd run api:dev
+npm.cmd run dev
+```
+
+For the browser tests, apply the local migration once, then run `npm.cmd run test:e2e`; Playwright starts both local servers. Local D1 files live under `.wrangler/` and are ignored by Git.
+
+## Backend deployment
+
+The Worker code and D1 migration are in `backend/` and `wrangler.toml`. Sign in with `npx wrangler login`, create the hosted D1 database with `npx wrangler d1 create eredivisie-eleven`, and copy the returned database UUID into `wrangler.toml`. Then run `npx wrangler d1 migrations apply eredivisie-eleven --remote` and `npm.cmd run api:deploy`. Add GitHub repository variables `CLOUDFLARE_ACCOUNT_ID` and `VITE_API_BASE` (the deployed Worker origin plus `/api`, for example `https://eredivisie-eleven-api.<your-subdomain>.workers.dev/api`) and secret `CLOUDFLARE_API_TOKEN`. The `Deploy popularity API` workflow will then apply later migrations and publish Worker updates. The Worker endpoint is publicly readable for aggregate stats; write requests accept only players that fit the server-generated daily puzzle. The anonymous session ID is a basic duplicate guard, not strong Sybil protection.
+
 Use `Nieuwe testpuzzel` for a fresh board and `Terug naar vandaag` to restore the daily board. Daily progress uses versioned local storage keyed to the Amsterdam calendar date. The model assigns each valid answer a synthetic share: `(appearances + 2 × goals + 10)^1.3`, normalized against all valid answers for that slot. Tiers use that share (Diamond <5%, Legendary <12%, Epic <25%, Rare <40%, otherwise Common). Score deduction is `round(10 + 90 × (1 − share)^1.5)`, clamped to 10–100. These percentages are a deterministic model for gameplay, not actual player popularity or community votes.
 
 ## Data
