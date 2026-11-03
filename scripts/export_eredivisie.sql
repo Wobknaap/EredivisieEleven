@@ -98,19 +98,28 @@ top_scorer_seasons AS (
   GROUP BY s.player_id
 ),
 club_counts AS (
-  SELECT l.player_id, CAST(l.club_id AS VARCHAR) AS club_id, c.name AS club_name, COUNT(*) AS matches
+  SELECT l.player_id, CAST(l.club_id AS VARCHAR) AS club_id, c.name AS club_name,
+         COUNT(*) AS appearances, SUM(l.goals) AS goals,
+         list_sort(list_distinct(list(l.season))) AS seasons
   FROM league l JOIN clubs c ON c.club_id = l.club_id
   GROUP BY l.player_id, l.club_id, c.name
 ),
+club_stats AS (
+  SELECT player_id,
+         list(struct_pack(clubId := club_id, club := club_name, appearances := appearances,
+                          goals := goals, seasons := seasons) ORDER BY appearances DESC, club_id) AS values
+  FROM club_counts GROUP BY player_id
+),
 club_history AS (
-  SELECT player_id, list(CAST(club_id AS VARCHAR) ORDER BY matches DESC, club_id) AS clubIds,
-         list(club_name ORDER BY matches DESC, club_id) AS clubs,
-         first(club_name ORDER BY matches DESC, club_id) AS club
+  SELECT player_id, list(CAST(club_id AS VARCHAR) ORDER BY appearances DESC, club_id) AS clubIds,
+         list(club_name ORDER BY appearances DESC, club_id) AS clubs,
+         first(club_name ORDER BY appearances DESC, club_id) AS club
   FROM club_counts GROUP BY player_id
 )
 SELECT CAST(p.player_id AS VARCHAR) AS id, p.name, h.club,
        COALESCE(p.country_of_citizenship, '') AS nation, p.position,
        COALESCE(p.sub_position, '') AS subPosition, h.clubs, h.clubIds,
+       cstats.values AS clubStats,
        t.appearances, t.career_goals AS goals, list_sort(list_distinct(list(l.season))) AS seasons,
        EXTRACT(YEAR FROM p.date_of_birth) AS birthYear,
        ss.values AS goalsPerSeason, t.career_goals AS careerGoals,
@@ -120,6 +129,7 @@ SELECT CAST(p.player_id AS VARCHAR) AS id, p.name, h.club,
        tops.values AS eredivisieTopScorerSeasons
 FROM players p JOIN league_totals t ON t.player_id = p.player_id
 JOIN club_history h ON h.player_id = p.player_id JOIN league l ON l.player_id = p.player_id
+JOIN club_stats cstats ON cstats.player_id = p.player_id
 LEFT JOIN season_stats ss ON ss.player_id = p.player_id
 LEFT JOIN champion_seasons cs ON cs.player_id = p.player_id
 LEFT JOIN cup_seasons cups ON cups.player_id = p.player_id
@@ -130,7 +140,7 @@ LEFT JOIN supercup_winner_seasons scw ON scw.player_id = p.player_id
 LEFT JOIN top_scorer_seasons tops ON tops.player_id = p.player_id
 WHERE p.name IS NOT NULL AND trim(p.name) <> ''
 GROUP BY p.player_id, p.name, h.club, p.country_of_citizenship, p.position, p.sub_position,
-         h.clubs, h.clubIds, t.appearances, t.career_goals, p.date_of_birth, ss.values, cs.values,
+         h.clubs, h.clubIds, cstats.values, t.appearances, t.career_goals, p.date_of_birth, ss.values, cs.values,
          cups.values, cupw.values, cupf.values, scs.values, scw.values, tops.values
 ORDER BY p.player_id
 ) TO 'src/data/players.json' (FORMAT JSON, ARRAY true);

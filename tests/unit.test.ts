@@ -5,7 +5,7 @@ import metadata from '../src/data/metadata.json';
 import {candidatesFor} from '../src/puzzle';
 
 describe('verified player pool',()=>{
-  it('includes only recorded Eredivisie appearances',()=>{expect(players).toHaveLength(metadata.eligiblePlayers);expect(players.every(p=>p.appearances>0&&p.clubs.length===p.clubIds.length&&p.seasons.length>0)).toBe(true)});
+  it('includes only recorded Eredivisie appearances',()=>{expect(players).toHaveLength(metadata.eligiblePlayers);expect(players.every(p=>p.appearances>0&&p.clubs.length===p.clubIds.length&&p.clubStats.length===p.clubIds.length&&p.seasons.length>0)).toBe(true)});
   it('includes season goals and evidence-backed honours',()=>{
     expect(players.every(p=>p.goals===p.careerGoals&&p.goalsPerSeason.reduce((sum,value)=>sum+value.goals,0)===p.careerGoals)).toBe(true);
     expect(players.every(p=>!p.knvbBekerWinnerSeasons||p.knvbBekerWinnerSeasons.every(value=>p.knvbBekerSeasons?.some(season=>season.season===value.season)))).toBe(true);
