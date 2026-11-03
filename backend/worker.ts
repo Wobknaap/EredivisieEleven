@@ -1,4 +1,4 @@
-import {buildPuzzle,eligible,isCorrect,slotsBase,type Player} from '../src/engine';
+import {buildPuzzle,dateSeed,eligible,isCorrect,slotsBase,type Player} from '../src/engine';
 import {players} from '../src/players';
 
 interface D1Result { success:boolean; meta?:{changes?:number} }
@@ -14,7 +14,6 @@ const corsHeaders=(origin:string,env:Env)=>({
 });
 const json=(body:unknown,status=200,headers:Record<string,string>={})=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8',...headers}});
 const validDay=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(`${s}T00:00:00Z`));
-const dateSeed=(day:string)=>[...day].reduce((n,c)=>(n*31+c.charCodeAt(0))|0,7);
 function isPlayer(value:unknown):value is Player{return typeof value==='string'&&players.some(p=>p.id===value)}
 
 export default {async fetch(request:Request,env:Env):Promise<Response>{

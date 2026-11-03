@@ -1,20 +1,98 @@
-import{useEffect,useMemo,useState}from'react';import{ArrowUpRight,Check,ChevronRight,Copy,RefreshCw,Search,Shield,Timer, Trophy}from'lucide-react';import{buildPuzzle,eligible,isCorrect,normalize,pointsFromShare,popularityShare,rarityFromShare,type Slot}from'./engine';import{players}from'./players';import{fetchPopularity,recordCorrectPick,type CommunityStats}from'./api';
-const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const dateSeed=(day:string)=>[...day].reduce((n,c)=>(n*31+c.charCodeAt(0))|0,7);
-export default function App(){const[daily]=useState(today()),[saved,setSaved]=useState<any>(()=>{try{return JSON.parse(localStorage.getItem('eleven-v1-'+today())||'{}')}catch{return{}}}),[test,setTest]=useState(false),[seed,setSeed]=useState(dateSeed(today())),[active,setActive]=useState('st1'),[query,setQuery]=useState(''),[message,setMessage]=useState(''),[community,setCommunity]=useState<CommunityStats|null>(null),[wrong,setWrong]=useState<number>(saved.wrong||0),[score,setScore]=useState<number>(saved.score??1100),[used,setUsed]=useState<string[]>(saved.used||[]),[filled,setFilled]=useState<Record<string,string>>(saved.filled||{}),[reward,setReward]=useState<Record<string,number>>({});
-const puzzle=useMemo(()=>buildPuzzle(players,seed),[seed]);const slot=puzzle.find(s=>s.id===active)!;const completed=Object.keys(filled).length;const finished=completed===11||wrong>=12;const matches=players.filter(p=>normalize(p.name).includes(normalize(query))||normalize(p.club).includes(normalize(query))).slice(0,7);const useCommunity=Boolean(!test&&community&&community.role===slot.role&&community.total>=community.minimumSample);const shareFor=(p:typeof players[number],s:Slot)=>useCommunity?(community!.players.find(x=>x.playerId===p.id)?.share||0):popularityShare(p,s,players);
-useEffect(()=>{let live=true;fetchPopularity(slot.role).then(data=>{if(live)setCommunity(data)});return()=>{live=false}},[slot.role]);
-function save(next:any){setSaved(next);if(!test)localStorage.setItem('eleven-v1-'+daily,JSON.stringify(next))}
-function guess(id:string){if(!query.trim()||finished)return;const p=players.find(x=>x.id===id);if(!p)return;if(used.includes(id)){setMessage('Deze speler staat al op het veld. Kies iemand anders.');return}if(!eligible(p,slot.role)){setWrong(w=>w+1);setMessage('Die speler past niet bij deze positie.');setQuery('');return}if(isCorrect(slot,p,used)){const share=shareFor(p,slot);const rewardPts=pointsFromShare(share);setFilled(f=>({...f,[slot.id]:p.id}));setUsed(u=>[...u,id]);setReward(r=>({...r,[slot.id]:rewardPts}));setScore(s=>s-rewardPts);setMessage(`${p.name} is goed! ${share.toFixed(1)}% ${useCommunity?'gekozen door spelers':'modelaandeel'} · ${rarityFromShare(share)} · −${rewardPts} punten`);const next={filled:{...filled,[slot.id]:p.id},used:[...used,id],score:score-rewardPts,wrong};save(next);if(!test){void recordCorrectPick(daily,slot.id,p.id).then(()=>fetchPopularity(slot.role).then(setCommunity))}const nextSlot=puzzle.find(s=>!({...filled,[slot.id]:p.id})[s.id]);if(nextSlot)setActive(nextSlot.id)}else{setWrong(w=>w+1);setMessage('Helaas, probeer het opnieuw.');save({...saved,wrong:wrong+1})}setQuery('')}
-function fresh(){const n=seed+1+Math.floor(Math.random()*5000);setSeed(n);setTest(true);setFilled({});setUsed([]);setReward({});setWrong(0);setScore(1100);setQuery('');setActive('st1');setMessage('Nieuwe testpuzzel gestart.');}
-function back(){setSeed(dateSeed(daily));setTest(false);setFilled(saved.filled||{});setUsed(saved.used||[]);setWrong(saved.wrong||0);setScore(saved.score??1100);setReward({});setMessage('Dagpuzzel hersteld.')}
-async function copy(){await navigator.clipboard?.writeText(`Eredivisie Daily Eleven ${test?'test':daily}: ${completed}/11 goed, ${wrong} fout. Score ${score}.`);setMessage('Resultaat gekopieerd.')}
-return <main className="app"><header className="top"><a className="brand" href="#"><span className="mark"><Shield size={23}/></span><span>Eredivisie<span className="brand-light"> Eleven</span><small>DE DAGELIJKSE VOETBALPUZZEL</small></span></a><span className="date">{test?'TESTPUZZEL':`DAG ${daily}`}</span></header>
-<section className="intro"><div><p className="kicker">DE EREDIVISIE, IN ELF NAMEN</p><h1>Stel jouw <em>elftal</em> samen.</h1><p className="sub">Vind spelers die passen bij de aanwijzingen. Elke naam telt.</p></div><button className="circle" aria-label="Nieuwe testpuzzel" onClick={fresh}><RefreshCw size={18}/></button></section>
-<section className="status"><div><span className="label">HUIDIGE SCORE</span><strong>{score.toLocaleString('nl-NL')}<small> pt</small></strong></div><div className="status-right"><span><Timer size={15}/> FOUTEN</span><strong>{wrong}<small> / 12</small></strong></div><div className="progress"><span style={{width:`${completed/11*100}%`}}/></div></section>
-<div className="layout"><section className="pitch-wrap"><div className="pitch-head"><span>4—4—2 FORMatie</span><span>{completed} / 11 GEVONDEN</span></div><div className="pitch"><div className="pitch-lines"><i/><b/><u/></div><div className="formation"><div className="row forwards">{['st1','st2'].map(id=><PlayerToken key={id} id={id} puzzle={puzzle} filled={filled} active={active} choose={setActive} community={community} useCommunity={useCommunity}/>)}</div><div className="row mids">{['lm','cm1','cm2','rm'].map(id=><PlayerToken key={id} id={id} puzzle={puzzle} filled={filled} active={active} choose={setActive} community={community} useCommunity={useCommunity}/>)}</div><div className="row backs">{['lb','cb1','cb2','rb'].map(id=><PlayerToken key={id} id={id} puzzle={puzzle} filled={filled} active={active} choose={setActive} community={community} useCommunity={useCommunity}/>)}</div><div className="row keeper"><PlayerToken id="gk" puzzle={puzzle} filled={filled} active={active} choose={setActive} community={community} useCommunity={useCommunity}/></div></div></div><p className="pitch-note"><span className="dot"/> Kies een positie om de aanwijzing te bekijken</p></section>
-<section className="panel"><div className="panel-title"><span className="crest"><Trophy size={17}/></span><div><b>{slot.label}</b><small>POSITIE-AANWIJZING</small></div><span className="role">{slot.role}</span></div><div className="clue"><span className="clue-mark">“</span><p>{slot.clue}</p><small>Elke geldige speler mag je kiezen.</small></div><label className="search-label" htmlFor="player-search">ZOEK EEN SPELER</label><div className="searchbox"><Search size={17}/><input id="player-search" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&matches[0]&&guess(matches[0].id)} placeholder="Bijv. Van der Sar" autoComplete="off"/><kbd>↵</kbd></div>{query&&<div className="suggestions">{matches.map(p=><button key={p.id} onClick={()=>guess(p.id)} disabled={used.includes(p.id)}><span><b>{p.name}</b><small>{p.club} · {p.nation}</small></span><ChevronRight size={16}/></button>)}{matches.length===0&&<p>Geen speler gevonden.</p>}</div>}<div className="feedback" aria-live="polite">{message}</div><div className="panel-bottom"><span><Check size={15}/> {completed} posities ingevuld</span>{finished&&<button onClick={copy}><Copy size={15}/> Deel resultaat</button>}</div></section></div>
-{finished&&<section className="result"><Trophy/><div><b>{completed===11?'Een compleet elftal!':'Einde van de puzzel'}</b><span>Score {score} · {wrong} fout · {completed}/11 spelers</span></div><button onClick={copy}><Copy size={16}/> Kopieer resultaat</button></section>}
-<section className="controls"><div><b>{test?'Je speelt een testpuzzel':'Vandaag'}</b><span>{test?'Je dagelijkse voortgang blijft bewaard.':'Iedereen krijgt dezelfde puzzel.'}</span></div><div>{test&&<button className="quiet" onClick={back}>Terug naar vandaag</button>}<button className="primary" onClick={fresh}><RefreshCw size={15}/> Nieuwe testpuzzel</button></div></section>
-<footer><span>Gemaakt voor liefhebbers van het Nederlandse voetbal.</span><span>{useCommunity?`LIVE · ${community?.total} JUISTE KEUZES`:'MODELINSCHATTING · WACHT OP 30 KEUZES'} <ArrowUpRight size={12}/></span></footer></main>}
-function PlayerToken({id,puzzle,filled,active,choose,community,useCommunity}:{id:string;puzzle:Slot[];filled:Record<string,string>;active:string;choose:(s:string)=>void;community:CommunityStats|null;useCommunity:boolean}){const slot=puzzle.find(x=>x.id===id)!;const player=players.find(p=>p.id===filled[id]);const share=player?(useCommunity?(community?.players.find(x=>x.playerId===player.id)?.share||0):popularityShare(player,slot,players)):0;const tier=player?rarityFromShare(share):'';return <button className={`token ${active===id?'selected':''} ${player?'has-player':''}`} onClick={()=>choose(id)} aria-label={`${slot.label}${player?': '+player.name+', '+tier+', '+share.toFixed(1)+' procent':''}`}><span className="token-icon">{player?<Check size={15}/>:slot.role}</span><b>{player?player.name:slot.label}</b>{player&&<><small>{player.club}</small><span className={`rank rank-${tier.toLowerCase()}`}>{tier} · {share.toFixed(1)}%</span></>}</button>}
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {Check,Copy,Search,RotateCcw} from 'lucide-react';
+import {amsterdamDay,buildPuzzle,DATA_VERSION,dateSeed,eligible,isCorrect,normalize,pointsFromShare,popularityShare,rarityFromShare,type Player,type Slot} from './engine';
+import {players} from './players';
+import metadata from './data/metadata.json';
+import {recordCorrectPick} from './api';
+
+type Reward={points:number;share:number};
+type Progress={filled:Record<string,string>;wrong:number;score:number;rewards:Record<string,Reward>};
+const empty=():Progress=>({filled:{},wrong:0,score:1100,rewards:{}});
+const dailyKey=(day:string)=>`eleven-${DATA_VERSION}-${day}`;
+const testKey=`eleven-test-${DATA_VERSION}`;
+function readProgress(key:string):Progress{
+  try{
+    const value=JSON.parse(localStorage.getItem(key)||'null');
+    if(!value||typeof value!=='object'||!value.filled||typeof value.filled!=='object'||!Number.isInteger(value.wrong)||value.wrong<0||value.wrong>12||!Number.isFinite(value.score)||value.score<0||value.score>1100)return empty();
+    if(Object.values(value.filled).some(id=>typeof id!=='string'))return empty();
+    return {filled:value.filled,wrong:value.wrong,score:value.score,rewards:value.rewards&&typeof value.rewards==='object'?value.rewards:{}};
+  }catch{return empty()}
+}
+function savedTest(){try{const v=JSON.parse(localStorage.getItem(testKey)||'null');return Number.isInteger(v?.seed)?v.seed as number:null}catch{return null}}
+
+export default function App(){
+  const [day,setDay]=useState(amsterdamDay);
+  const [testSeed,setTestSeed]=useState<number|null>(savedTest);
+  const [progress,setProgress]=useState<Progress>(()=>readProgress(savedTest()===null?dailyKey(amsterdamDay()):testKey+'-progress'));
+  const [active,setActive]=useState('st');
+  const [query,setQuery]=useState('');
+  const [cursor,setCursor]=useState(0);
+  const [message,setMessage]=useState('');
+  const submitting=useRef(false);
+  const test=testSeed!==null;
+  const seed=testSeed??dateSeed(day);
+  const puzzle=useMemo(()=>buildPuzzle(players,seed),[seed]);
+  const slot=puzzle.find(s=>s.id===active)||puzzle[0];
+  const selected=Object.values(progress.filled);
+  const completed=selected.length;
+  const finished=completed===11||progress.wrong>=12;
+  const lookup=useMemo(()=>new Map(players.map(p=>[p.id,p])),[]);
+  const matches=useMemo(()=>{
+    const q=normalize(query);if(!q)return [];
+    return players.filter(p=>normalize(p.name).includes(q)||p.clubs.some(c=>normalize(c).includes(q)))
+      .sort((a,b)=>Number(normalize(b.name).startsWith(q))-Number(normalize(a.name).startsWith(q))||a.name.localeCompare(b.name)||Number(a.id)-Number(b.id)).slice(0,8);
+  },[query]);
+
+  useEffect(()=>{
+    const timer=window.setInterval(()=>{const next=amsterdamDay();if(next!==day){setDay(next);if(!test){setProgress(readProgress(dailyKey(next)));setActive('st');setMessage('Nieuwe dagpuzzel.')}}},30000);
+    return()=>clearInterval(timer);
+  },[day,test]);
+  const save=(next:Progress)=>{setProgress(next);localStorage.setItem(test?testKey+'-progress':dailyKey(day),JSON.stringify(next))};
+  function guess(player:Player){
+    if(submitting.current||finished||progress.filled[slot.id])return;
+    submitting.current=true;
+    try{
+      if(selected.includes(player.id)){setMessage('Deze speler staat al in je elftal.');return}
+      if(!eligible(player,slot.role)||!isCorrect(slot,player,selected)){
+        const next={...progress,wrong:progress.wrong+1};save(next);setMessage('Niet goed. Je verliest één poging.');setQuery('');return;
+      }
+      const share=popularityShare(player,slot,players);
+      const reward=pointsFromShare(share);
+      const next={...progress,filled:{...progress.filled,[slot.id]:player.id},score:Math.max(0,progress.score-reward),rewards:{...progress.rewards,[slot.id]:{points:reward,share}}};
+      save(next);setMessage(`${player.name} goed · ${rarityFromShare(share)} ${share.toFixed(1)}% · −${reward} punten`);
+      if(!test)void recordCorrectPick(day,slot.id,player.id);
+      const nextSlot=puzzle.find(s=>!next.filled[s.id]);if(nextSlot)setActive(nextSlot.id);
+      setQuery('');setCursor(0);
+    }finally{submitting.current=false}
+  }
+  function startTest(){
+    const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);
+    const nextSeed=bytes[0]===seed?bytes[0]+1:bytes[0];
+    setTestSeed(nextSeed);localStorage.setItem(testKey,JSON.stringify({seed:nextSeed}));
+    const next=empty();setProgress(next);localStorage.setItem(testKey+'-progress',JSON.stringify(next));
+    setActive('st');setQuery('');setCursor(0);setMessage('Nieuwe testpuzzel gestart.');
+  }
+  function backToday(){setTestSeed(null);localStorage.removeItem(testKey);setProgress(readProgress(dailyKey(day)));setActive('st');setQuery('');setMessage('Dagpuzzel hersteld.')}
+  async function copy(){await navigator.clipboard.writeText(`Eredivisie Eleven ${test?'test':day} · ${completed}/11 · ${progress.wrong} fout · score ${progress.score}`);setMessage('Resultaat gekopieerd.')}
+  return <main className="app">
+    <header className="topbar"><div className="identity"><span className="identity-mark">11</span><div><strong>Eredivisie Eleven</strong><span>De dagelijkse voetbalpuzzel</span></div></div><div className="date">{test?'Testpuzzel':`Dag ${day}`}</div></header>
+    <div className="game-heading"><div><h1>Stel je elftal samen</h1><p>Vind voor elke positie een speler die bij de aanwijzing past.</p></div><div className="heading-actions"><button onClick={startTest}><RotateCcw size={16}/> Nieuwe testpuzzel</button>{test&&<button className="text-button" onClick={backToday}>Terug naar vandaag</button>}</div></div>
+    <section className="scoreline" aria-label="Spelstatus"><div><span>Score</span><strong>{progress.score.toLocaleString('nl-NL')}</strong></div><div><span>Foute pogingen over</span><strong>{12-progress.wrong}<small> / 12</small></strong></div><div><span>Ingevuld</span><strong>{completed}<small> / 11</small></strong></div></section>
+    <div className="game-grid"><section className="pitch-section" aria-label="4-3-3 opstelling"><div className="section-heading"><h2>4-3-3</h2><span>{completed} van 11 spelers</span></div><div className="pitch"><div className="pitch-outline"/><div className="center-line"/><div className="center-circle"/><div className="penalty-area"/><div className="formation">
+      {[['lw','st','rw'],['cm1','cm2','cm3'],['lb','cb1','cb2','rb'],['gk']].map((row,i)=><div className={`pitch-row row-${i}`} key={i}>{row.map(id=><Position key={id} slot={puzzle.find(s=>s.id===id)!} player={lookup.get(progress.filled[id])} reward={progress.rewards[id]} active={slot.id===id} onClick={()=>{setActive(id);setQuery('');setMessage('')}}/>)}</div>)}
+    </div></div></section>
+    <section className="play-panel"><div className="section-heading"><h2>{slot.label}</h2><span>{slot.role}</span></div><p className="clue">{slot.clue}</p><p className="hint">Kies één speler die hieraan voldoet.</p>
+      {progress.filled[slot.id]?<div className="filled-note"><Check size={17}/> {lookup.get(progress.filled[slot.id])?.name} staat op deze positie.</div>:<>
+      <label htmlFor="player-search">Zoek een speler</label><div className="searchbox"><Search size={18}/><input id="player-search" autoComplete="off" value={query} disabled={finished} placeholder="Naam of club" onChange={e=>{setQuery(e.target.value);setCursor(0)}} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();setCursor(Math.min(cursor+1,matches.length-1))}if(e.key==='ArrowUp'){e.preventDefault();setCursor(Math.max(0,cursor-1))}if(e.key==='Enter'&&matches[cursor]){e.preventDefault();guess(matches[cursor])}}}/></div>
+      {query.trim()&&<div className="suggestions" role="listbox" aria-label="Spelers">{matches.length?matches.map((p,i)=><button key={p.id} data-player-id={p.id} role="option" aria-selected={i===cursor} className={i===cursor?'highlighted':''} disabled={selected.includes(p.id)} onClick={()=>guess(p)}><span><b>{p.name}</b><small>{p.club} · {p.nation||'Nationaliteit onbekend'}{p.birthYear?` · ${p.birthYear}`:''}</small></span></button>):<p>Geen speler gevonden.</p>}</div>}</>}
+      <p className="feedback" aria-live="polite">{message}</p><p className="rarity-note">Zeldzaamheid is een modelschatting op basis van Eredivisie-optredens en doelpunten.</p>
+    </section></div>
+    {finished&&<section className="result"><div><h2>{completed===11?'Elftal compleet':'Pogingen op'}</h2><p>Score {progress.score} · {completed} goed · {progress.wrong} fout</p></div><button onClick={copy}><Copy size={16}/> Kopieer resultaat</button><div className="result-list">{puzzle.filter(s=>progress.filled[s.id]).map(s=><div key={s.id}><span>{s.role} · {lookup.get(progress.filled[s.id])?.name}</span><b>{rarityFromShare(progress.rewards[s.id]?.share??100)} · −{progress.rewards[s.id]?.points??0}</b></div>)}</div></section>}
+    <footer><span>Gebaseerd op {metadata.eligiblePlayers.toLocaleString('nl-NL')} gedocumenteerde Eredivisiespelers · seizoenen {metadata.firstSeason}–{metadata.lastSeason}</span><span>Elke dag een nieuwe puzzel om 00.00 uur (Amsterdam)</span></footer>
+  </main>
+}
+
+function Position({slot,player,reward,active,onClick}:{slot:Slot;player?:Player;reward?:Reward;active:boolean;onClick:()=>void}){
+  const tier=reward?rarityFromShare(reward.share):'';
+  return <button className={`position ${active?'active':''} ${player?'complete':''}`} onClick={onClick} aria-label={`${slot.label}${player?`: ${player.name}, ${tier}, ${reward?.share.toFixed(1)} procent`:''}`}><span className="position-role">{slot.role}</span><strong>{player?player.name:slot.label}</strong>{reward&&<small className={`rank rank-${tier.toLowerCase()}`}>{tier} · {reward.share.toFixed(1)}%</small>}</button>
+}

@@ -1,0 +1,27 @@
+{
+  "source": "https://github.com/dcaribou/transfermarkt-datasets",
+  "competitionId": "NL1",
+  "eligiblePlayers": 2617,
+  "playablePlayers": 2605,
+  "firstSeason": "2012",
+  "lastSeason": "2025",
+  "seasons": [
+    "2012",
+    "2013",
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+  ],
+  "missingPosition": 12,
+  "missingNation": 25,
+  "evidence": "Recorded appearance in an Eredivisie game with a matching home or away club ID"
+}

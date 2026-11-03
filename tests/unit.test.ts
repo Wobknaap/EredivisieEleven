@@ -1,2 +1,49 @@
-import{describe,it,expect}from'vitest';import{buildPuzzle,eligible,normalize,points,isCorrect,popularityShare,type Player}from'../src/engine';import{players}from'../src/players';
-describe('game rules',()=>{it('normalizes accents and case',()=>expect(normalize('ÁJAX')).toBe('ajax'));it('maps broad roles conservatively',()=>expect(eligible(players[0],'GK')).toBe(true));it('uses deterministic puzzles',()=>expect(buildPuzzle(players,42)).toEqual(buildPuzzle(players,42)));it('returns valid answers and rarity deductions',()=>{const p=players[0],s=buildPuzzle(players,42)[0];expect(isCorrect(s,p,[])).toBe(s.answers.includes(p.id));expect(points(p)).toBeGreaterThan(0)});it('splits modeled popularity across the valid answers',()=>{const s=buildPuzzle(players,42)[0];const total=s.answers.reduce((sum,id)=>sum+popularityShare(players.find(p=>p.id===id)!,s,players),0);expect(total).toBeCloseTo(100,8)});it('builds eleven slots',()=>expect(buildPuzzle(players,8)).toHaveLength(11))});
+import {describe,it,expect} from 'vitest';
+import {amsterdamDay,buildPuzzle,dateSeed,eligible,hasUniqueEleven,isCorrect,normalize,pointsFromShare,popularityShare,slotsBase} from '../src/engine';
+import {players} from '../src/players';
+import metadata from '../src/data/metadata.json';
+
+describe('verified player pool',()=>{
+  it('includes only recorded Eredivisie appearances',()=>{expect(players).toHaveLength(metadata.eligiblePlayers);expect(players.every(p=>p.appearances>0&&p.clubs.length===p.clubIds.length&&p.seasons.length>0)).toBe(true)});
+  it('maps detailed roles without inventing left or right positions',()=>{
+    expect(players.some(p=>eligible(p,'GK'))).toBe(true);
+    expect(players.filter(p=>eligible(p,'LB')).every(p=>p.subPosition==='Left-Back')).toBe(true);
+    expect(players.filter(p=>eligible(p,'RW')).every(p=>p.subPosition==='Right Winger')).toBe(true);
+  });
+  it('search normalization ignores accents and case',()=>expect(normalize('ÁJAX')).toBe('ajax'));
+});
+describe('4-3-3 puzzle',()=>{
+  it('uses the requested formation and produces deterministic daily seeds',()=>{
+    expect(slotsBase.map(s=>s[2])).toEqual(['LW','ST','RW','CM','CM','CM','LB','CB','CB','RB','GK']);
+    expect(dateSeed('2026-11-03')).toBe(dateSeed('2026-11-03'));
+    expect(buildPuzzle(players,42)).toEqual(buildPuzzle(players,42));
+  });
+  it('generates 100 solvable puzzles from evidence-backed clues',()=>{
+    for(let seed=0;seed<100;seed++){
+      const slots=buildPuzzle(players,seed);
+      expect(slots).toHaveLength(11);expect(hasUniqueEleven(slots)).toBe(true);
+      expect(new Set(slots.map(s=>s.clue)).size).toBe(11);
+      for(const slot of slots){
+        expect(slot.answers.length).toBeGreaterThanOrEqual(2);
+        for(const id of slot.answers){const player=players.find(p=>p.id===id)!;expect(player).toBeDefined();expect(eligible(player,slot.role)).toBe(true);
+          if(slot.key.startsWith('club:'))expect(player.clubIds).toContain(slot.key.split(':')[1]);
+          if(slot.key.startsWith('nation:'))expect(player.nation).toBe(slot.key.slice(7));
+        }
+      }
+    }
+  });
+  it('rejects duplicates and impossible assignments',()=>{
+    const slot=buildPuzzle(players,42)[0],player=players.find(p=>p.id===slot.answers[0])!;
+    expect(isCorrect(slot,player,[])).toBe(true);expect(isCorrect(slot,player,[player.id])).toBe(false);
+    expect(hasUniqueEleven([{answers:['a']},{answers:['a']}])).toBe(false);
+  });
+  it('models shares and rewards deterministically',()=>{
+    const slot=buildPuzzle(players,42)[0];
+    const total=slot.answers.reduce((sum,id)=>sum+popularityShare(players.find(p=>p.id===id)!,slot,players),0);
+    expect(total).toBeCloseTo(100,6);expect(pointsFromShare(2)).toBeGreaterThan(pointsFromShare(40));
+  });
+  it('uses Amsterdam calendar dates across DST',()=>{
+    expect(amsterdamDay(new Date('2026-03-29T21:59:00Z'))).toBe('2026-03-29');
+    expect(amsterdamDay(new Date('2026-03-29T22:01:00Z'))).toBe('2026-03-30');
+  });
+});

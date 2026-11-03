@@ -1,48 +1,60 @@
-# Eredivisie Daily Eleven
+# Eredivisie Eleven
 
-A locally playable React + TypeScript football guessing game. The current small player list is **demonstration data**, not a verified historical database. Do not treat it as comprehensive. It contains 26 selected historic and current names; there is no verified season coverage or imported eligibility count yet.
+Een dagelijkse 4-3-3 voetbalpuzzel met echte, gedocumenteerde Eredivisie-optredens. De site werkt op GitHub Pages. De Cloudflare Worker telt anonieme correcte keuzes; het spel blijft zonder API speelbaar.
 
-## Run
+## Spelen en lokaal draaien
 
 ```powershell
 npm.cmd install
-npm.cmd run dev
-npm.cmd run build
-npm.cmd run preview
-npm.cmd test
-npm.cmd run test:e2e
-```
-
-On macOS/Linux, replace `npm.cmd` with `npm`.
-
-## Backend (local)
-
-The Worker validates daily correct picks against the same seeded puzzle as the browser and stores one answer per session and slot in a local D1 database. Anonymous session IDs are random UUIDs in local storage; no names, email addresses, or IP data are written by the app. Popularity is aggregated by broad position. After 30 correct picks for a role, the game uses those observed choices for tiers and score; until then it uses the deterministic model below. Test puzzles do not write votes.
-
-Run these in separate terminals:
-
-```powershell
 npm.cmd run api:db:local
 npm.cmd run api:dev
 npm.cmd run dev
 ```
 
-For the browser tests, apply the local migration once, then run `npm.cmd run test:e2e`; Playwright starts both local servers. Local D1 files live under `.wrangler/` and are ignored by Git.
+Open de Vite URL die in de terminal verschijnt. Voor een productiebuild en checks:
 
-## Backend deployment
+```powershell
+npm.cmd test
+npm.cmd run test:e2e
+npm.cmd run build
+npm.cmd run preview
+```
 
-The Worker code and D1 migration are in `backend/` and `wrangler.toml`. The hosted D1 database has been provisioned in the project's Cloudflare account and its database UUID is in `wrangler.toml`. The Worker is deployed at `https://eredivisie-eleven-api.eredivisie-daily-eleven-wk.workers.dev`; the GitHub Pages build points to that API URL. For automatic future Worker deployments, add repository variable `CLOUDFLARE_ACCOUNT_ID` and secret `CLOUDFLARE_API_TOKEN`. The `Deploy popularity API` workflow then applies migrations and publishes Worker updates. The Worker endpoint is publicly readable for aggregate stats; write requests accept only players that fit the server-generated daily puzzle. The anonymous session ID is a basic duplicate guard, not strong Sybil protection.
-
-Use `Nieuwe testpuzzel` for a fresh board and `Terug naar vandaag` to restore the daily board. Daily progress uses versioned local storage keyed to the Amsterdam calendar date. The model assigns each valid answer a synthetic share: `(appearances + 2 × goals + 10)^1.3`, normalized against all valid answers for that slot. Tiers use that share (Diamond <5%, Legendary <12%, Epic <25%, Rare <40%, otherwise Common). Score deduction is `round(10 + 90 × (1 − share)^1.5)`, clamped to 10–100. These percentages are a deterministic model for gameplay, not actual player popularity or community votes.
+Op macOS of Linux gebruik je `npm` in plaats van `npm.cmd`.
 
 ## Data
 
-The prepared source is `src/players.ts`. It intentionally identifies itself as a demo. `scripts/prepare_data.py` inspects a user-supplied DuckDB snapshot and refuses to infer columns or league IDs. Obtain the source dataset from [dcaribou/transfermarkt-datasets](https://github.com/dcaribou/transfermarkt-datasets), review its current license and the underlying data reuse restrictions, inspect schema and competition IDs, then implement/export fields only when reuse is cleared. No raw database is bundled. Current verified season coverage: none. Broad Defender/Midfield/Attack mappings do not prove left/right footed roles; the current formation uses broad category eligibility.
+De bron is de [Transfermarkt-datasets DuckDB snapshot](https://github.com/dcaribou/transfermarkt-datasets), gepubliceerd door dcaribou. De bron bevat gegevens tot juli 2026. De export in `src/data/players.json` is gemaakt met `scripts/export_eredivisie.sql`. Alleen een `appearances` record gekoppeld aan een Eredivisie-wedstrijd (`NL1`), met een club-ID dat overeenkomt met thuis- of uitteam, telt als bewijs. Clubhistorie komt uitsluitend uit zulke optredens; transfers en huidige clubs tellen niet automatisch mee.
+
+De snapshot levert **2.617 spelers** met bewezen Eredivisie-optredens, waarvan **2.605** een bruikbare brede positie hebben. Het bereik is seizoen **2012 t/m 2025**. Dit is niet de volledige Eredivisiegeschiedenis. Twaalf spelers hebben geen bruikbare positie en kunnen nog niet als antwoord worden gekozen. De exacte dekking en ontbrekende velden staan in `src/data/metadata.json`.
+
+Om de data opnieuw te maken, installeer Python en DuckDB en voer uit:
+
+```powershell
+py -m pip install duckdb
+py scripts/prepare_data.py --download
+```
+
+Of geef een reeds gedownloade `.duckdb` als argument mee. De ruwe database staat in `data/raw/` en wordt door Git genegeerd. Het script controleert eerst het bronschema en de competitie-ID. Het SQL-bestand werkt ook rechtstreeks met de DuckDB CLI. De data-adapter is `src/players.ts`.
+
+De bronrepo heeft een CC0-licentie voor eigen materiaal. Onderliggende Transfermarkt-gegevens kunnen afzonderlijke databank- of gebruiksrechten hebben. Herpublicatie en commercieel gebruik moeten aan die voorwaarden worden getoetst. Er worden geen spelersfoto's, clublogo's of live scrapers gebruikt.
+
+## Regels
+
+- 4-3-3: linksbuiten, spits, rechtsbuiten, drie middenvelders, vier verdedigers en een keeper.
+- Eén speler per positie en nooit dezelfde speler twee keer.
+- Startscore 1.100; twaalf foute pogingen voor het hele elftal. De laagste eindscore wint.
+- Een geldig fout antwoord kost één poging; onbekende of dubbele invoer niet.
+- Elk slot heeft meerdere geldige antwoorden. De generator controleert via bipartite matching of elf unieke spelers het volledige elftal kunnen vullen.
+- De dagelijkse seed is de Amsterdamse datum plus de dataversie. De dag wisselt om middernacht, ook bij zomer- en wintertijd. Voortgang staat per dag en dataversie in `localStorage`.
+- `Nieuwe testpuzzel` maakt een nieuw geldig bord en laat de dagpuzzel intact. `Terug naar vandaag` herstelt die dagpuzzel.
+
+De percentageweergave is een **modelschatting**, geen gemeten populariteit: per geldig antwoord krijgt een speler gewicht `(Eredivisie-optredens + 2 × doelpunten + 10)^0,75`; zijn percentage is zijn gewicht gedeeld door het totaal voor dat slot. De aftrek is `round(10 + 90 × (1 − percentage/100)^1,5)`, begrensd op 10–100. Zeldzaamheidslabels: Diamond <5%, Legendary <12%, Epic <25%, Rare <40%, anders Common. De score is daardoor reproduceerbaar en verandert niet door nieuwe bezoekers.
 
 ## Deploy
 
-Push to `main`; GitHub Actions runs tests and builds Pages at `/EredivisieEleven/`. In repository Settings → Pages, choose **GitHub Actions** as the source. The expected project URL is `https://Wobknaap.github.io/EredivisieEleven/` after the workflow succeeds.
+Push naar `main` bouwt en publiceert GitHub Pages via `.github/workflows/deploy.yml`. Kies in de repo **Settings → Pages → Build and deployment → GitHub Actions**. De site staat op [wobknaap.github.io/EredivisieEleven](https://wobknaap.github.io/EredivisieEleven/). De Vite base path is ingesteld voor deze projectrepo.
 
-## Limitations
+De Worker en D1 staan in `backend/` en `wrangler.toml`. Voor automatische API-deploys zijn repository variable `CLOUDFLARE_ACCOUNT_ID` en secret `CLOUDFLARE_API_TOKEN` nodig. `.github/workflows/deploy-api.yml` voert migraties uit en deployt de Worker. De API is aanvullend; de statische website valideert antwoorden lokaal. Daardoor zijn antwoorden technisch zichtbaar voor wie de webbestanden inspecteert. De Worker beperkt dubbele telling via een anonieme sessie-ID, maar biedt geen fraudebestendige leaderboard.
 
-The demo dataset is intentionally limited and does not claim full eligibility. Puzzle clue intersections and scoring use only its prepared facts. A production real-data import, full matching-based puzzle generator, and browser end-to-end coverage remain to be implemented after source schema and rights are verified.
+De huidige productiebuild is circa 856 kB JavaScript ongecomprimeerd en 143 kB gzip. De ruwe DuckDB-snapshot wordt nooit door de browser gedownload.
