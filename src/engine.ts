@@ -4,7 +4,7 @@ export type CupSeasonStat={season:string;appearances:number;finalAppearances:num
 export type SupercupSeasonStat={season:string;appearances:number};
 export type Player={id:string;name:string;club:string;nation:string;position:string;subPosition:string;clubs:string[];clubIds:string[];clubStats:ClubStat[];goals:number;careerGoals:number;appearances:number;seasons:string[];birthYear:number|null;goalsPerSeason:SeasonStat[];championSeasons:SeasonStat[]|null;knvbBekerSeasons:CupSeasonStat[]|null;knvbBekerWinnerSeasons:CupSeasonStat[]|null;knvbBekerFinalSeasons:string[]|null;johanCruijffSchaalSeasons:SupercupSeasonStat[]|null;johanCruijffSchaalWinnerSeasons:SupercupSeasonStat[]|null;eredivisieTopScorerSeasons:{season:string;goals:number}[]|null};
 export type Slot={id:string;label:string;role:string;clue:string;answers:string[];key:string;family?:string;kind?:string;weight?:number};
-export const DATA_VERSION='nl1-2026-11-03-v2-hints';
+export const DATA_VERSION='nl1-2026-11-03-v3-category-guess';
 export function dateSeed(day:string){return [...`${DATA_VERSION}:${day}`].reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))|0,7)}
 export function amsterdamDay(now=new Date()){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(now)}
 export function normalize(s:string){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
